@@ -1,5 +1,7 @@
 module Main where
 
+import Protolude.Lifted
+
 import CachePurge
 import Control.Monad.Logger
 import System.Remote.Monitoring

@@ -12,10 +12,9 @@ module JobQueue
 
 where
 
-import           Control.Concurrent (ThreadId, forkIO, killThread)
-import           Control.Concurrent.STM (atomically, STM)
+import           Protolude
+
 import           Control.Concurrent.STM.TQueue
-import           Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import qualified Database.Redis as Redis
 import           JobQueue.Types
@@ -26,12 +25,9 @@ data JobQueue = JobQueue
   , _threadId :: ThreadId
   }
 
-instance Show JobQueue where
-  show JobQueue {..} = "Queue on thread: " ++ show _threadId
-
 data JobQueueEvent
   = JobQueueEvent PurgeJob
-  | JobQueueError String
+  | JobQueueError Text
   deriving (Eq, Show)
 
 

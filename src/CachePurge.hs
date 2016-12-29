@@ -10,19 +10,15 @@ module CachePurge
 
 where
 
+import           Protolude.Lifted
+
 import           Cache.Content
 import           Cache.Purge
 import           Cache.Registry (CacheRegistry)
 import qualified Cache.Registry as Registry
-import           Control.Concurrent.Async.Lifted
-import           Control.Concurrent.Lifted
 import           Control.Concurrent.STM
-import           Control.Exception.Lifted
-import           Control.Monad
-import           Control.Monad.IO.Class
 import           Control.Monad.Logger
 import           Control.Monad.Trans.Control
-import           Data.Monoid
 import qualified Data.Set as Set
 import qualified Data.Text as Text
 import qualified Database.Redis as Redis
@@ -75,7 +71,7 @@ watchFileEvents watcher registry = do
               Text.pack (show e)
       return ()
     Notify.InotifyError err ->
-      $(logWarn) $ "Inotify error: " <> Text.pack (show err)
+      $(logWarn) $ "Inotify error: " <> err
 
 watchJobQueue
   :: (MonadLogger m, MonadIO m, MonadBaseControl IO m)
@@ -91,7 +87,7 @@ watchJobQueue jobs pool registry = do
         pool
       return ()
     Queue.JobQueueError err ->
-      $(logWarn) $ "Inotify error: " <> Text.pack (show err)
+      $(logWarn) $ "Inotify error: " <> err
 
 processPurgeJob
   :: (MonadLogger m, MonadIO m)

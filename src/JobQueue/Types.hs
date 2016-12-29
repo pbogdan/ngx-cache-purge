@@ -3,7 +3,7 @@ module JobQueue.Types
 
 where
 
-import Data.ByteString (ByteString)
+import Protolude.Lifted
 
 data PurgeJob = PurgeJob
   { pjHost :: ByteString

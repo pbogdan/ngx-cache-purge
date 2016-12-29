@@ -18,11 +18,12 @@ module Cache.Content
   , parseCacheKey
 
   , module Control.Lens
-    )
+  )
 
 where
 
-import           Control.Applicative
+import           Protolude.Lifted
+
 import           Control.Lens
 import           Data.Attoparsec.ByteString (Parser)
 import qualified Data.Attoparsec.ByteString as A
@@ -30,11 +31,6 @@ import           Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as BC
 import           Data.Hashable
-import           Data.List (find)
-import           Data.Maybe (fromMaybe)
-import           Data.Monoid
-import           Data.Word (Word8)
-import           GHC.Generics
 import           System.IO (withFile, IOMode(..))
 
 newtype DomainName =
@@ -90,8 +86,8 @@ parseCacheFile path =
       Right v -> return $ Just (CacheEntry (BC.pack path) v)
       Left _ -> return Nothing
 
-parseCacheFileHeader :: ByteString -> Either String CacheKey
+parseCacheFileHeader :: ByteString -> Either Text CacheKey
 parseCacheFileHeader bytes =
   let ls = BC.lines bytes
       line = fromMaybe "" $ find (BS.isPrefixOf "KEY: ") ls
-  in A.parseOnly parseCacheKey line
+  in either (Left . toS) (Right . identity) (A.parseOnly parseCacheKey line)

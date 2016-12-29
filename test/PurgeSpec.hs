@@ -2,6 +2,8 @@
 
 module PurgeSpec (main, spec) where
 
+import           Protolude.Lifted
+
 import           Cache.Content
 import           Cache.Purge
 import           Control.Monad (forM_)

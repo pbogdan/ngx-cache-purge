@@ -6,18 +6,13 @@ module Cache.Purge
   (  MonadPurge(..)
   ) where
 
-import           Control.Applicative (pure)
-import           Control.Exception (SomeException)
-import           Control.Monad.Catch (catch)
-import           Control.Monad.Identity
-import           Data.ByteString (ByteString)
+import           Protolude
+
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Char8 as BC
 import           Data.ByteString.Search
 import           Data.ByteString.Search.Substitution
-import           Data.Maybe (isJust)
-import           Data.Set (Set)
 import qualified Data.Set as Set
 import qualified Data.Set.Extra as Set
 import           System.Directory

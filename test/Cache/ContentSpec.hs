@@ -7,6 +7,8 @@ module Cache.ContentSpec
 
 where
 
+import           Protolude.Lifted
+
 import           Cache.Content
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString as BS

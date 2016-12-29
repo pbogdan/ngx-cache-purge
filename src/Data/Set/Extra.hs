@@ -7,7 +7,8 @@ module Data.Set.Extra
 
 where
 
-import           Data.Set (Set)
+import Protolude.Lifted
+
 import qualified Data.Set as Set
 
 partitionM

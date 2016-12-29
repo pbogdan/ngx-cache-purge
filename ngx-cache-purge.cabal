@@ -15,6 +15,7 @@ Extra-Source-Files:     README.md, ChangeLog.md
 Library
   Default-Language:     Haskell2010
   Default-Extensions:   OverloadedStrings
+                      , NoImplicitPrelude
   HS-Source-Dirs:       src
   GHC-Options:          -Wall
   Exposed-Modules:      Cache.Content
@@ -47,6 +48,7 @@ Library
                       , monad-logger
                       , mtl >= 2.2.1
                       , pcre-light
+                      , protolude-lifted
                       , regex-applicative
                       , stm
                       , stringsearch
@@ -56,6 +58,7 @@ Library
 Executable ncp
   Default-Language:     Haskell2010
   Default-Extensions:   OverloadedStrings
+                      , NoImplicitPrelude
   Ghc-Options:          -Wall -threaded -rtsopts -with-rtsopts=-N
   HS-Source-Dirs:       app
   Main-Is:              Main.hs
@@ -64,11 +67,13 @@ Executable ncp
                       , ekg
                       , monad-logger
                       , ngx-cache-purge
+                      , protolude-lifted
                                             
 Test-Suite spec
   Type:                 exitcode-stdio-1.0
   Default-Language:     Haskell2010
   Default-Extensions:   OverloadedStrings
+                      , NoImplicitPrelude
   Hs-Source-Dirs:       test
   Ghc-Options:          -Wall
   Main-Is:              Spec.hs
@@ -91,6 +96,7 @@ Test-Suite spec
                       , unordered-containers
                       , lens
                       , ngx-cache-purge
+                      , protolude-lifted
 
 Source-Repository head
   Type:               git

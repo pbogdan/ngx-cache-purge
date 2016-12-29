@@ -1,16 +1,15 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 module ThreadPool
-  (ThreadPool
+  ( ThreadPool
   , mkThreadPool
   , runInPool
   )
 
 where
 
-import Control.Concurrent.Async.Lifted
-import Control.Concurrent.Lifted
-import Control.Exception.Lifted
+import Protolude.Lifted
+
 import Control.Monad.Trans.Control
 
 data ThreadPool = ThreadPool

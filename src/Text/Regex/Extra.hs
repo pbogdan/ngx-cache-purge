@@ -5,11 +5,11 @@ module Text.Regex.Extra
 
 where
 
-import           Data.ByteString (ByteString)
+import Protolude.Lifted
+
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BL
 import           Data.ByteString.Search
-import           Data.List (foldl')
 
 escape
   :: ByteString -- Text to search within

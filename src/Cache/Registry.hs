@@ -13,12 +13,11 @@ module Cache.Registry
   )
 where
 
+import           Protolude hiding (always, empty, (&))
+
 import           Cache.Content
-import           Data.Foldable
 import           Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
-import           Data.Maybe
-import           Data.Set (Set)
 import qualified Data.Set as Set
 import           System.FilePath.Find hiding (find, filePath)
 

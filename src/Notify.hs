@@ -15,18 +15,15 @@ module Notify
 
 where
 
-import           Control.Concurrent.Async.Lifted
+import           Protolude.Lifted hiding (always)
+import           Unsafe
+
 import           Control.Concurrent.STM hiding (always)
-import           Control.Exception.Lifted
-import           Control.Monad
-import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Control
 import qualified Data.ByteString as Bytes
 import qualified Data.ByteString.Char8 as CharBytes
-import           Data.Foldable
 import           Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
-import           Data.Maybe
 import           System.FilePath ((</>))
 import           System.FilePath.Find hiding (find,filePath, Unknown)
 import           System.INotify
@@ -103,7 +100,7 @@ watcher
 watcher root = do
   notify <- liftIO initINotify
   queueSize <-
-    read . CharBytes.unpack <$>
+    fromMaybe 16384 . readMaybe . CharBytes.unpack <$>
     liftIO (Bytes.readFile "/proc/sys/fs/inotify/max_queued_events")
   liftIO $ print queueSize
   q1 <-
@@ -132,7 +129,7 @@ instance Exception InotifyException
 
 data InotifyEvent
   = InotifyEvent FilePath
-  | InotifyError String
+  | InotifyError Text
   deriving (Show)
 
 getAsync :: Watcher m -> Async (StM m ())
@@ -147,7 +144,7 @@ safeAddWatch
   -> [EventVariety]
   -> FilePath
   -> (FilePath -> Event -> IO ())
-  -> m (Either String WatchDescriptor)
+  -> m (Either Text WatchDescriptor)
 safeAddWatch inotify evs path cb =
   liftIO $
   catch
@@ -189,6 +186,7 @@ eventPath QOverflow {} = Nothing
 eventPath Ignored {} = Nothing
 eventPath (Unknown _) = Nothing
 
+-- @TODO: get rid of unsafe
 processInotifyEvent
   :: (MonadBaseControl IO m, MonadIO m)
   => Event
@@ -207,7 +205,8 @@ processInotifyEvent event path watches inotify inq = do
     safeAddWatch inotify [MoveIn, Close] (path </> filePath event) (handler inq)
   if isFile event && shouldReport event && isJust (eventPath event)
     then return
-           (Just (InotifyEvent (fromJust ((path </>) <$> eventPath event))))
+           (Just
+              (InotifyEvent (unsafeFromJust ((path </>) <$> eventPath event))))
     else return Nothing
 
 isDeleted :: Event -> Bool

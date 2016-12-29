@@ -37,14 +37,11 @@ resolver: lts-7.14
 # will not be run. This is useful for tweaking upstream packages.
 packages:
 - '.'
-- location:
-    git: https://github.com/pbogdan/protolude-lifted
-    commit: 585d2827faef0e7eb11fc478ba1d372f271ba1be
-  extra-dep: true
 
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
-extra-deps: []
+extra-deps:
+- protolude-lifted-0.1.0.0
 
 # Override default flag values for local packages and extra-deps
 flags: {}

@@ -1,0 +1,97 @@
+Name:                   ngx-cache-purge
+Version:                0.0.1
+Author:                 Piotr Bogdan <ppbogdan@gmail.com>
+Maintainer:             Piotr Bogdan <ppbogdan@gmail.com>
+License:                BSD3
+License-File:           LICENSE
+Synopsis:               Purges nginx caches.
+Description:            Watches nginx cache directories, keeps an index of
+                        keys, and regex purges items from a redis queue 
+Category:               Web
+Cabal-Version:          >= 1.10
+Build-Type:             Simple
+Extra-Source-Files:     README.md, ChangeLog.md
+
+Library
+  Default-Language:     Haskell2010
+  Default-Extensions:   OverloadedStrings
+  HS-Source-Dirs:       src
+  GHC-Options:          -Wall
+  Exposed-Modules:      Cache.Content
+                      , Cache.Purge
+                      , CachePurge
+                      , Data.ByteString.Extra
+  Other-Modules:        Cache.Registry
+                      , Data.Set.Extra
+                      , JobQueue
+                      , JobQueue.Types
+                      , Notify
+                      , Text.Regex.Extra
+                      , ThreadPool
+  Build-Depends:        async
+                      , attoparsec
+                      , base >= 4 && < 5
+                      , bytestring
+                      , containers >= 0.5.5.1
+                      , directory >= 1.2.1.0
+                      , exceptions
+                      , filemanip
+                      , filepath
+                      , hashable
+                      , hedis
+                      , hinotify >= 0.3.9
+                      , lens
+                      , lifted-async
+                      , lifted-base
+                      , monad-control
+                      , monad-logger
+                      , mtl >= 2.2.1
+                      , pcre-light
+                      , regex-applicative
+                      , stm
+                      , stringsearch
+                      , text >= 1.2.0.5
+                      , unordered-containers
+
+Executable ncp
+  Default-Language:     Haskell2010
+  Default-Extensions:   OverloadedStrings
+  Ghc-Options:          -Wall -threaded -rtsopts -with-rtsopts=-N
+  HS-Source-Dirs:       app
+  Main-Is:              Main.hs
+  Build-Depends:        attoparsec
+                      , base >= 4 && < 5
+                      , ekg
+                      , monad-logger
+                      , ngx-cache-purge
+                                            
+Test-Suite spec
+  Type:                 exitcode-stdio-1.0
+  Default-Language:     Haskell2010
+  Default-Extensions:   OverloadedStrings
+  Hs-Source-Dirs:       test
+  Ghc-Options:          -Wall
+  Main-Is:              Spec.hs
+  Other-Modules:         Cache.ContentSpec
+                       , PurgeSpec
+  Build-Depends:        hspec
+                      , hspec-attoparsec
+                      , quickcheck-instances
+                      , QuickCheck
+                      , base >= 4 && < 5
+                      , bytestring
+                      , stringsearch
+                      , pcre-light
+                      , directory
+                      , mtl
+                      , free
+                      , exceptions
+                      , attoparsec
+                      , containers
+                      , unordered-containers
+                      , lens
+                      , ngx-cache-purge
+
+Source-Repository head
+  Type:               git
+  Location:           https://github.com/pbogdan/ngx-cache-purge/

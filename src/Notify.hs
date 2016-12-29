@@ -16,7 +16,6 @@ module Notify
 where
 
 import           Protolude.Lifted hiding (always)
-import           Unsafe
 
 import           Control.Concurrent.STM hiding (always)
 import           Control.Monad.Trans.Control
@@ -102,7 +101,6 @@ watcher root = do
   queueSize <-
     fromMaybe 16384 . readMaybe . CharBytes.unpack <$>
     liftIO (Bytes.readFile "/proc/sys/fs/inotify/max_queued_events")
-  liftIO $ print queueSize
   q1 <-
     liftIO $
     atomically (newTBQueue queueSize :: STM (TBQueue (FilePath, Event)))
@@ -186,7 +184,6 @@ eventPath QOverflow {} = Nothing
 eventPath Ignored {} = Nothing
 eventPath (Unknown _) = Nothing
 
--- @TODO: get rid of unsafe
 processInotifyEvent
   :: (MonadBaseControl IO m, MonadIO m)
   => Event
@@ -203,11 +200,10 @@ processInotifyEvent event path watches inotify inq = do
   when (shouldAdd event) $
     either (liftIO . print) (insertWatch watches (path </> filePath event)) =<<
     safeAddWatch inotify [MoveIn, Close] (path </> filePath event) (handler inq)
-  if isFile event && shouldReport event && isJust (eventPath event)
-    then return
-           (Just
-              (InotifyEvent (unsafeFromJust ((path </>) <$> eventPath event))))
-    else return Nothing
+  case (eventPath event, isFile event && shouldReport event) of
+    (Just !subpath, True) -> return (Just (InotifyEvent (path </> subpath)))
+    (Just !_, False) -> return Nothing
+    (Nothing, !_) -> return Nothing
 
 isDeleted :: Event -> Bool
 isDeleted Deleted {} = True

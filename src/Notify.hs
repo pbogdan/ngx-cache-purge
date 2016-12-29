@@ -67,9 +67,6 @@ data Watcher m = Watcher
   , _async :: Async (StM m ())
   }
 
--- instance Show Watcher where
---     show = _root
-
 setupWatches
   :: MonadIO m
   => INotify
@@ -86,7 +83,7 @@ setupWatches inotify evs cb root = do
     filterPredicate :: FilterPredicate
     filterPredicate = fileType ==? Directory
     go :: WatchList -> FilePath -> IO WatchList
-    go (WatchList acc) path = do
+    go (WatchList !acc) !path = do
       watch <- addWatch inotify evs path (cb path)
       return $ WatchList $ HashMap.insert path watch acc
 

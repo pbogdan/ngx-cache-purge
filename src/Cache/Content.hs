@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TemplateHaskell #-}
 
@@ -83,11 +84,13 @@ parseCacheFile path =
   withFile path ReadMode $ \h -> do
     header <- BS.hGet h 4096
     case parseCacheFileHeader header of
-      Right v -> return $ Just (CacheEntry (BC.pack path) v)
-      Left _ -> return Nothing
+      Right !v -> return (Just (CacheEntry (BC.pack path) v))
+      Left !_ -> return Nothing
 
 parseCacheFileHeader :: ByteString -> Either Text CacheKey
 parseCacheFileHeader bytes =
   let ls = BC.lines bytes
       line = fromMaybe "" $ find (BS.isPrefixOf "KEY: ") ls
-  in either (Left . toS) (Right . identity) (A.parseOnly parseCacheKey line)
+  in case A.parseOnly parseCacheKey line of
+       Right x -> Right x
+       Left e -> Left . toS $ e

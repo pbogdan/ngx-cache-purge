@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Cache.Registry
@@ -76,12 +77,9 @@ scanCacheDirectory dir = do
     filt :: FilterPredicate
     filt = fileType ==? RegularFile
     go :: IO CacheRegistry -> FilePath -> IO CacheRegistry
-    go ces p = do
+    go ces !p = do
       entry <- parseCacheFile p
       entries_ <- ces
       case entry of
-        Just ce ->
-          let domain = ce ^. cacheKey . keyDomain
-              current = fromMaybe Set.empty (entries_ ^. at domain)
-          in return $ entries_ & at domain .~ Just (Set.insert ce current)
+        Just !ce -> return $ add ce entries_
         Nothing -> return entries_

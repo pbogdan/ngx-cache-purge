@@ -72,14 +72,13 @@ size (CacheRegistry registry) = HashMap.foldr ((+) . Set.size) 0 registry
 scanCacheDirectory :: FilePath -> IO CacheRegistry
 scanCacheDirectory dir = do
   files <- findWithHandler (const . const $ return []) always filt dir
-  foldl' go (pure empty) files
+  foldM go empty files
   where
     filt :: FilterPredicate
     filt = fileType ==? RegularFile
-    go :: IO CacheRegistry -> FilePath -> IO CacheRegistry
-    go ces !p = do
+    go :: CacheRegistry -> FilePath -> IO CacheRegistry
+    go registry !p = do
       entry <- parseCacheFile p
-      entries_ <- ces
       case entry of
-        Just !ce -> return $ add ce entries_
-        Nothing -> return entries_
+        Just !ce -> return $ add ce registry
+        Nothing -> return registry

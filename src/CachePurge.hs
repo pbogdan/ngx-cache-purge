@@ -44,10 +44,10 @@ loop = do
     waitAnyCatchCancel [a, b, c] :: m (Async (StM m ()), Either SomeException ())
   case errOrRet of
     Right () -> return ()
-    Left e -> do
+    Left e ->
       logErrorN $ "Thread aborted with an exception: " <> Text.pack (show e)
-      liftIO $ Notify.kill watcher
-      liftIO $ Queue.kill jobs
+  liftIO $ Notify.kill watcher
+  liftIO $ Queue.kill jobs
 
 watchFileEvents
   :: (MonadBaseControl IO m, MonadLogger m, MonadIO m)

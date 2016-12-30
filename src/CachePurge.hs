@@ -22,7 +22,6 @@ import qualified Data.Set as Set
 import qualified Data.Text as Text
 import qualified Database.Redis as Redis
 import qualified JobQueue as Queue
-import           JobQueue.Types
 import qualified Notify
 import           ThreadPool (ThreadPool)
 import qualified ThreadPool as Pool
@@ -88,25 +87,25 @@ watchJobQueue jobs pool registry = do
 
 processPurgeJob
   :: (MonadLogger m, MonadIO m)
-  => PurgeJob -> TVar CacheRegistry -> m ()
+  => Queue.PurgeJob -> TVar CacheRegistry -> m ()
 processPurgeJob job registry = do
   logInfoN $ "Received a purge job: " <> Text.pack (show job)
   current <- liftIO $ atomically $ readTVar registry
   logInfoN $ "Total cache entries: " <> Text.pack (show (Registry.size current))
-  let maybeEntries = current ^. at (DomainName (pjHost job))
+  let maybeEntries = current ^. at (DomainName (Queue.pjHost job))
   case maybeEntries of
     Just entries -> do
-      (good, _bad) <- liftIO $ purge (pjPath job) entries
+      (good, _bad) <- liftIO $ purge (Queue.pjPath job) entries
       logInfoN $ "Finshed purge: " <> Text.pack (show job)
       liftIO . atomically . modifyTVar registry $
-        Registry.replaceWith (DomainName (pjHost job)) (Set.\\ good)
+        Registry.replaceWith (DomainName (Queue.pjHost job)) (Set.\\ good)
       v' <- liftIO $ atomically $ readTVar registry
       logInfoN $
         "Total cache entries after purge: " <>
         (Text.pack . show $ Registry.size v')
       return ()
     Nothing -> do
-      logWarnN $ "Domain not found " <> Text.pack (show (pjHost job))
+      logWarnN $ "Domain not found " <> Text.pack (show (Queue.pjHost job))
       fmap
         logDebugN
         (mappend "Known domains:" . Text.pack . show)

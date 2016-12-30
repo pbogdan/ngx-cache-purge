@@ -25,7 +25,6 @@ Library
   Other-Modules:        Cache.Registry
                       , Data.Set.Extra
                       , JobQueue
-                      , JobQueue.Types
                       , Notify
                       , Text.Regex.Extra
                       , ThreadPool

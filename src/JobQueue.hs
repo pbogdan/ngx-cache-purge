@@ -2,7 +2,10 @@
 {-# LANGUAGE RecordWildCards #-}
 
 module JobQueue
-  ( JobQueue(..)
+  ( PurgeJob
+  , pjHost
+  , pjPath
+  , JobQueue(..)
   , JobQueueEvent(..)
   , jobQueue
   , kill
@@ -17,7 +20,11 @@ import           Protolude
 import           Control.Concurrent.STM.TQueue
 import qualified Data.ByteString as BS
 import qualified Database.Redis as Redis
-import           JobQueue.Types
+
+data PurgeJob = PurgeJob
+  { pjHost :: ByteString
+  , pjPath :: ByteString
+  } deriving (Show, Eq)
 
 data JobQueue = JobQueue
   { _queue :: TQueue JobQueueEvent

@@ -35,29 +35,26 @@ lookupWatch
   => TVar WatchList -> FilePath -> m (Maybe WatchDescriptor)
 lookupWatch watches path = do
   WatchList oldWatches <- liftIO $ atomically $ readTVar watches
-  let watch = HashMap.lookup path oldWatches
-  return watch
+  return $ HashMap.lookup path oldWatches
 
 insertWatch
   :: MonadIO m
   => TVar WatchList -> FilePath -> WatchDescriptor -> m ()
 insertWatch watches path wd = do
   WatchList oldWatches <- liftIO $ atomically $ readTVar watches
-  _ <-
+  void $
     liftIO $
     atomically $
     swapTVar watches (WatchList $ HashMap.insert path wd oldWatches)
-  return ()
 
 deleteWatch
   :: MonadIO m
   => TVar WatchList -> FilePath -> m ()
 deleteWatch watches path = do
   WatchList oldWatches <- liftIO $ atomically $ readTVar watches
-  _ <-
+  void $
     liftIO $
     atomically $ swapTVar watches (WatchList $ HashMap.delete path oldWatches)
-  return ()
 
 data Watcher m = Watcher
   { _root :: FilePath
@@ -105,7 +102,7 @@ watcher root = do
   ws <- liftIO $ atomically $ newTVar (WatchList HashMap.empty)
   watches <- setupWatches notify [MoveIn, Close] (handler q1) root
   a <- async (pollingThread notify ws q1 q2)
-  _ <- liftIO $ atomically $ swapTVar ws watches
+  void $ liftIO $ atomically $ swapTVar ws watches
   return $ Watcher root notify ws q2 a
 
 -- @TODO: should I drain the queue as well?
@@ -192,7 +189,7 @@ processInotifyEvent
 processInotifyEvent event path watches inotify inq = do
   when (event == QOverflow) $ throwIO InotifyQueueOverflow
   when (shouldRemove event) $ do
-    _ <- fmap removeWatch <$> lookupWatch watches (path </> filePath event)
+    void $ fmap removeWatch <$> lookupWatch watches (path </> filePath event)
     deleteWatch watches (path </> filePath event)
   when (shouldAdd event) $
     either (liftIO . print) (insertWatch watches (path </> filePath event)) =<<

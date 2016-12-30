@@ -56,7 +56,7 @@ watchFileEvents watcher registry = do
   event <- liftIO $ Notify.getEvent watcher
   case event of
     Notify.InotifyEvent path -> do
-      _ <-
+      void $
         fork $ do
           entryOrErr <- try (liftIO $ parseCacheFile path)
           case entryOrErr of

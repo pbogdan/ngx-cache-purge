@@ -28,8 +28,8 @@ runInPool
   => m a -> (a -> m ()) -> (SomeException -> m ()) -> ThreadPool -> m ()
 runInPool action onRight onLeft pool = do
   let sem = threadPoolSem pool
-  _ <- waitQSem sem
-  _ <-
+  void $ waitQSem sem
+  void $
     fork $ do
       a <- async action
       r <- waitCatch a

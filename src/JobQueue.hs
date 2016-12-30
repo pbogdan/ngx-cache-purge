@@ -47,7 +47,7 @@ pollPurgeQueue conn queue = do
         Left _ -> return Nothing
   case j of
     Just (_, job) -> do
-      _ <- atomically $ writeTQueue queue (JobQueueEvent $ parseJobString job)
+      void $ atomically $ writeTQueue queue (JobQueueEvent $ parseJobString job)
       pollPurgeQueue conn queue
     Nothing -> pollPurgeQueue conn queue
   return ()

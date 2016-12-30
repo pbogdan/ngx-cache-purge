@@ -38,21 +38,27 @@ newtype DomainName =
   DomainName ByteString
   deriving (Eq, Show, Ord, Generic)
 
-instance Hashable DomainName where
+instance Hashable DomainName
+
+instance NFData DomainName
 
 data CacheKey = CacheKey
   { _keyDomain :: !DomainName
   , _keyPath :: !ByteString
-  } deriving (Show, Eq, Ord)
+  } deriving (Generic, Show, Eq, Ord)
 
 makeLenses ''CacheKey
+
+instance NFData CacheKey
 
 data CacheEntry = CacheEntry
   { _filePath :: !ByteString
   , _cacheKey :: !CacheKey
-  } deriving (Show, Eq, Ord)
+  } deriving (Generic, Show, Eq, Ord)
 
 makeLenses ''CacheEntry
+
+instance NFData CacheEntry
 
 parseCacheKey :: Parser CacheKey
 parseCacheKey =

@@ -94,6 +94,21 @@ Test-Suite spec
                       , ngx-cache-purge
                       , protolude-lifted
 
+Benchmark bench
+  Type:                exitcode-stdio-1.0
+  Hs-Source-Dirs:      bench
+  Main-Is:             Main.hs
+  Ghc-Options:         -Wall
+  Build-Depends:       base
+                     , attoparsec
+                     , bytestring
+                     , criterion
+                     , ngx-cache-purge
+                     , protolude-lifted
+  Default-Language:    Haskell2010
+  Default-Extensions:  OverloadedStrings
+                     , NoImplicitPrelude
+
 Source-Repository head
   Type:               git
   Location:           https://github.com/pbogdan/ngx-cache-purge/

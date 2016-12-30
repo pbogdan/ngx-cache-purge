@@ -2,7 +2,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module CachePurge
@@ -46,7 +45,7 @@ loop = do
   case errOrRet of
     Right () -> return ()
     Left e -> do
-      $(logError) $ "Thread aborted with an exception: " <> Text.pack (show e)
+      logErrorN $ "Thread aborted with an exception: " <> Text.pack (show e)
       liftIO $ Notify.kill watcher
       liftIO $ Queue.kill jobs
 
@@ -64,14 +63,13 @@ watchFileEvents watcher registry = do
             Right (Just !entry) ->
               liftIO $ atomically $ modifyTVar' registry $ Registry.add entry
             Right Nothing ->
-              $(logInfo) $ "Cache key not found in file " <> Text.pack path
+              logInfoN $ "Cache key not found in file " <> Text.pack path
             Left (e :: IOException) ->
-              $(logWarn) $
+              logWarnN $
               "Exception while parsing file " <> Text.pack path <> ": " <>
               Text.pack (show e)
       return ()
-    Notify.InotifyError err ->
-      $(logWarn) $ "Inotify error: " <> err
+    Notify.InotifyError err -> logWarnN $ "Inotify error: " <> err
 
 watchJobQueue
   :: (MonadLogger m, MonadIO m, MonadBaseControl IO m)
@@ -83,20 +81,18 @@ watchJobQueue jobs pool registry = do
       Pool.runInPool
         (processPurgeJob job registry)
         (const (return ()))
-        (\e -> $(logWarn) $ "Exception in purge: " <> (Text.pack . show $ e))
+        (\e -> logWarnN $ "Exception in purge: " <> (Text.pack . show $ e))
         pool
       return ()
-    Queue.JobQueueError err ->
-      $(logWarn) $ "Inotify error: " <> err
+    Queue.JobQueueError err -> logWarnN $ "Inotify error: " <> err
 
 processPurgeJob
   :: (MonadLogger m, MonadIO m)
   => PurgeJob -> TVar CacheRegistry -> m ()
 processPurgeJob job registry = do
-  $(logInfo) $ "Received a purge job: " <> Text.pack (show job)
+  logInfoN $ "Received a purge job: " <> Text.pack (show job)
   current <- liftIO $ atomically $ readTVar registry
-  $(logInfo) $
-    "Total cache entries: " <> Text.pack (show (Registry.size current))
+  logInfoN $ "Total cache entries: " <> Text.pack (show (Registry.size current))
   let maybeEntries = current ^. at (DomainName (pjHost job))
   case maybeEntries of
     Just entries -> do
@@ -112,7 +108,7 @@ processPurgeJob job registry = do
     Nothing -> do
       logWarnN $ "Domain not found " <> Text.pack (show (pjHost job))
       fmap
-        $(logDebug)
+        logDebugN
         (mappend "Known domains:" . Text.pack . show)
         (Registry.keys current)
       return ()

@@ -85,7 +85,6 @@ Test-Suite spec
                       , pcre-light
                       , directory
                       , mtl
-                      , free
                       , exceptions
                       , attoparsec
                       , containers

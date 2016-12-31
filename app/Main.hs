@@ -2,8 +2,8 @@ module Main where
 
 import Protolude.Lifted
 
-import CachePurge
 import Control.Monad.Logger
+import NgxCachePurge
 import System.Remote.Monitoring
 
 main :: IO ()

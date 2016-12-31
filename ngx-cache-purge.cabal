@@ -23,7 +23,7 @@ library
     exposed-modules:
         Cache.Content
         Cache.Purge
-        CachePurge
+        NgxCachePurge
         Data.ByteString.Extra
     build-depends:
         async >=2.1.1 && <2.2,

@@ -84,8 +84,15 @@ setupWatches inotify evs cb root = do
       watch <- addWatch inotify evs path (cb path)
       return $ WatchList $ HashMap.insert path watch acc
 
-handler :: TBQueue (FilePath, Event) -> FilePath -> Event -> IO ()
-handler !queue !path !event = atomically $ writeTBQueue queue (path, event)
+handler :: TBQueue (FilePath, Event)
+        -> TVar Integer
+        -> FilePath
+        -> Event
+        -> IO ()
+handler !queue !c !path !event =
+  atomically $ do
+    writeTBQueue queue (path, event)
+    when (shouldReport event && isJust (eventPath event)) $ modifyTVar' c (+ 1)
 
 watcher
   :: (MonadBaseControl IO m, MonadIO m)
@@ -95,13 +102,16 @@ watcher root = do
   queueSize <-
     fromMaybe 16384 . readMaybe . CharBytes.unpack <$>
     liftIO (Bytes.readFile "/proc/sys/fs/inotify/max_queued_events")
-  q1 <-
-    liftIO $
-    atomically (newTBQueue queueSize :: STM (TBQueue (FilePath, Event)))
-  q2 <- liftIO $ atomically (newTBQueue queueSize :: STM (TBQueue InotifyEvent))
+  c1 <- liftIO $ atomically $ newTVar 0
+  c2 <- liftIO $ atomically $ newTVar 0
+  q1 <- liftIO $ atomically (newTBQueue queueSize)
+  q2 <- liftIO $ atomically (newTBQueue queueSize)
   ws <- liftIO $ atomically $ newTVar (WatchList HashMap.empty)
-  watches <- setupWatches notify [MoveIn, Close] (handler q1) root
-  a <- async (pollingThread notify ws q1 q2)
+  watches <- setupWatches notify [MoveIn, Close] (handler q1 c1) root
+  a <- async (pollingThread notify ws q1 q2 c2)
+  b <-
+    async $ monitorQueueBacklog queueSize c1 c2
+  link2 a b
   void $ liftIO $ atomically $ swapTVar ws watches
   return $ Watcher root notify ws q2 a
 
@@ -113,8 +123,21 @@ kill Watcher {..} = do
   for_ ws removeWatch
   killINotify _inotify
 
-data InotifyException =
-  InotifyQueueOverflow
+monitorQueueBacklog
+  :: (MonadBaseControl IO f, MonadIO f, Integral a1, Integral a)
+  => a1 -> TVar a -> TVar a -> f ()
+monitorQueueBacklog queueSize c1 c2 =
+  void $
+  forever $ do
+    !r1 <- liftIO $ atomically $ readTVar c1
+    !r2 <- liftIO $ atomically $ readTVar c2
+    when (fromIntegral (r1 - r2) > (fromIntegral queueSize * (0.99 :: Double))) $
+      throwIO InotifyEventsDropped
+    threadDelay 100000
+
+data InotifyException
+  = InotifyQueueOverflow
+  | InotifyEventsDropped
   deriving (Show)
 
 instance Exception InotifyException
@@ -149,17 +172,18 @@ pollingThread
   -> TVar WatchList
   -> TBQueue (FilePath, Event) -- ^ queue of events from inotify
   -> TBQueue InotifyEvent -- ^ the output queue
+  -> TVar Integer
   -> m ()
-pollingThread inotify watches inq outq = do
+pollingThread inotify watches inq outq c = do
   (path, event) <- liftIO $ atomically $ readTBQueue inq
   maybeE <-
     catch
-      (processInotifyEvent event path watches inotify inq)
+      (processInotifyEvent event path watches inotify inq c)
       (\e -> return (Just (InotifyError (show (e :: IOException)))))
   case maybeE of
     Nothing -> return ()
     Just e -> liftIO $ atomically $ writeTBQueue outq e
-  pollingThread inotify watches inq outq
+  pollingThread inotify watches inq outq c
 
 eventPath :: Event -> Maybe FilePath
 eventPath Accessed {..} = maybeFilePath
@@ -185,17 +209,24 @@ processInotifyEvent
   -> TVar WatchList
   -> INotify
   -> TBQueue (FilePath, Event)
+  -> TVar Integer
   -> m (Maybe InotifyEvent)
-processInotifyEvent event path watches inotify inq = do
+processInotifyEvent event path watches inotify inq c = do
   when (event == QOverflow) $ throwIO InotifyQueueOverflow
   when (shouldRemove event) $ do
     void $ fmap removeWatch <$> lookupWatch watches (path </> filePath event)
     deleteWatch watches (path </> filePath event)
   when (shouldAdd event) $
     either (liftIO . print) (insertWatch watches (path </> filePath event)) =<<
-    safeAddWatch inotify [MoveIn, Close] (path </> filePath event) (handler inq)
+    safeAddWatch
+      inotify
+      [MoveIn, Close]
+      (path </> filePath event)
+      (handler inq c)
   case (eventPath event, isFile event && shouldReport event) of
-    (Just !subpath, True) -> return (Just (InotifyEvent (path </> subpath)))
+    (Just !subpath, True) -> do
+      liftIO $ atomically $ modifyTVar' c (+ 1)
+      return (Just (InotifyEvent (path </> subpath)))
     (Just !_, False) -> return Nothing
     (Nothing, !_) -> return Nothing
 

@@ -44,7 +44,7 @@ loop = do
   case errOrRet of
     Right () -> return ()
     Left e ->
-      logErrorN $ "Thread aborted with an exception: " <> Text.pack (show e)
+      logErrorN $ "Thread aborted with an exception: " <> show e
   liftIO $ Notify.kill watcher
   liftIO $ Queue.kill jobs
 
@@ -66,7 +66,7 @@ watchFileEvents watcher registry = do
             Left (e :: IOException) ->
               logWarnN $
               "Exception while parsing file " <> Text.pack path <> ": " <>
-              Text.pack (show e)
+              show e
       return ()
     Notify.InotifyError err -> logWarnN $ "Inotify error: " <> err
 
@@ -80,7 +80,7 @@ watchJobQueue jobs pool registry = do
       Pool.runInPool
         (processPurgeJob job registry)
         (const (return ()))
-        (\e -> logWarnN $ "Exception in purge: " <> (Text.pack . show $ e))
+        (\e -> logWarnN $ "Exception in purge: " <> show e)
         pool
       return ()
     Queue.JobQueueError err -> logWarnN $ "Inotify error: " <> err
@@ -89,25 +89,25 @@ processPurgeJob
   :: (MonadLogger m, MonadIO m)
   => Queue.PurgeJob -> TVar CacheRegistry -> m ()
 processPurgeJob job registry = do
-  logInfoN $ "Received a purge job: " <> Text.pack (show job)
+  logInfoN $ "Received a purge job: " <> show job
   current <- liftIO $ atomically $ readTVar registry
-  logInfoN $ "Total cache entries: " <> Text.pack (show (Registry.size current))
+  logInfoN $ "Total cache entries: " <> show (Registry.size current)
   let maybeEntries = current ^. at (DomainName (Queue.pjHost job))
   case maybeEntries of
     Just entries -> do
       (good, _bad) <- liftIO $ purge (Queue.pjPath job) entries
-      logInfoN $ "Finshed purge: " <> Text.pack (show job)
+      logInfoN $ "Finshed purge: " <> show job
       liftIO . atomically . modifyTVar registry $
         Registry.replaceWith (DomainName (Queue.pjHost job)) (Set.\\ good)
       v' <- liftIO $ atomically $ readTVar registry
       logInfoN $
         "Total cache entries after purge: " <>
-        (Text.pack . show $ Registry.size v')
+        show (Registry.size v')
       return ()
     Nothing -> do
-      logWarnN $ "Domain not found " <> Text.pack (show (Queue.pjHost job))
+      logWarnN $ "Domain not found " <> show (Queue.pjHost job)
       fmap
         logDebugN
-        (mappend "Known domains:" . Text.pack . show)
+        (mappend "Known domains:" . show)
         (Registry.keys current)
       return ()

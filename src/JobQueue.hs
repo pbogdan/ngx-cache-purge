@@ -45,19 +45,18 @@ jobQueue conn = do
   return $ JobQueue queue conn tid
 
 pollPurgeQueue :: Redis.Connection -> TQueue JobQueueEvent -> IO ()
-pollPurgeQueue conn queue = do
-  j <-
-    Redis.runRedis conn $ do
-      job <- Redis.blpop ["purge_list"] 0
-      case job of
-        Right v -> return v
-        Left _ -> return Nothing
-  case j of
-    Just (_, job) -> do
-      void $ atomically $ writeTQueue queue (JobQueueEvent $ parseJobString job)
-      pollPurgeQueue conn queue
-    Nothing -> pollPurgeQueue conn queue
-  return ()
+pollPurgeQueue conn queue =
+  forever $ do
+    maybeJob <-
+      Redis.runRedis conn $ do
+        job <- Redis.blpop ["purge_list"] 0
+        case job of
+          Right v -> return v
+          Left _ -> return Nothing
+    void $
+      traverse
+        (atomically . writeTQueue queue)
+        (JobQueueEvent . parseJobString . snd <$> maybeJob)
 
 explode :: ByteString -> ByteString -> (ByteString, ByteString)
 explode sep str =
@@ -71,7 +70,7 @@ kill :: JobQueue -> IO ()
 kill JobQueue {..} = killThread _threadId
 
 getJob :: JobQueue -> IO JobQueueEvent
-getJob JobQueue {..} = atomically $ readTQueue _queue
+getJob = atomically . readTQueue . getJobsQueue
 
 getJobsQueue :: JobQueue -> TQueue JobQueueEvent
 getJobsQueue = _queue

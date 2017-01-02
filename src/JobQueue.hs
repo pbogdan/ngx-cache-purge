@@ -61,7 +61,7 @@ pollPurgeQueue conn queue = do
 
 explode :: ByteString -> ByteString -> (ByteString, ByteString)
 explode sep str =
-  let (pre, post) = BS.breakSubstring "::" str
+  let (pre, post) = BS.breakSubstring sep str
   in (pre, BS.drop (BS.length sep) post)
 
 parseJobString :: ByteString -> PurgeJob

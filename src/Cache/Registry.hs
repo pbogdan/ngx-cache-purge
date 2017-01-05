@@ -41,14 +41,13 @@ empty :: CacheRegistry
 empty = CacheRegistry HashMap.empty
 
 add :: CacheEntry -> CacheRegistry -> CacheRegistry
-add entry (CacheRegistry registry) =
+add !entry r@(CacheRegistry !registry) =
   let domain = entry ^. cacheKey ^. keyDomain
-      domainEntries = fromMaybe Set.empty (HashMap.lookup domain registry)
   in CacheRegistry $
-     HashMap.insert domain (Set.insert entry domainEntries) registry
+     HashMap.insert domain (Set.insert entry (entries domain r)) registry
 
 replace :: DomainName -> Set CacheEntry -> CacheRegistry -> CacheRegistry
-replace domain newEntries (CacheRegistry registry) =
+replace domain newEntries (CacheRegistry !registry) =
   CacheRegistry (HashMap.insert domain newEntries registry)
 
 replaceWith
@@ -60,7 +59,7 @@ replaceWith domain f registry =
   replace domain (f (entries domain registry)) registry
 
 entries :: DomainName -> CacheRegistry -> Set CacheEntry
-entries  domain (CacheRegistry registry)=
+entries domain (CacheRegistry registry) =
   fromMaybe Set.empty (HashMap.lookup domain registry)
 
 keys  :: CacheRegistry -> [DomainName]

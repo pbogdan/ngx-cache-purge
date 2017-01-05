@@ -5,6 +5,7 @@ module PurgeSpec (main, spec) where
 import           Protolude.Lifted
 
 import           Cache.Content
+import           Cache.Header
 import           Cache.Purge
 import           Control.Monad (forM_)
 import qualified Data.Set as Set
@@ -54,8 +55,25 @@ spec =
       , "/wp-includes/js/thickbox/thickbox.css??3.9.1"
       ]
     ces =
-      Set.fromList . map (CacheEntry "") $
+      Set.fromList . map (CacheEntry "" header) $
       map (CacheKey (DomainName "google.com")) paths
+    header =
+      CacheHeader
+      { cacheHeaderVersion = 0
+      , cacheHeaderValidSec = 0
+      , cacheHeaderLastModified = 0
+      , cacheHeaderDate = 0
+      , cacheHeaderCrc32 = 0
+      , cacheHeaderValidMSec = 0
+      , cacheHeaderHeaderStart = 0
+      , cacheHeaderBodyStart = 0
+      , cacheHeaderEtagLen = 0
+      , cacheHeaderEtag = ""
+      , cacheHeaderVaryLen = 0
+      , cacheHeaderVary = ""
+      , cacheHeaderVariant = ""
+      , cacheHeaderKey = ""
+      }
     cases =
       [ ("/(.*)", Set.size ces)
       , ("/", 1)

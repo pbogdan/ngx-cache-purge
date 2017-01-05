@@ -22,6 +22,7 @@ source-repository head
 library
     exposed-modules:
         Cache.Content
+        Cache.Header
         Cache.Purge
         NgxCachePurge
         Data.ByteString.Extra
@@ -29,6 +30,7 @@ library
         async >=2.1.1 && <2.2,
         attoparsec >=0.13.1.0 && <0.14,
         base ==4.*,
+        binary >= 0.8.3.0 && <0.9,
         bytestring >=0.10.8.1 && <0.11,
         containers >=0.5.5.1 && <0.6,
         directory >=1.2.1.0 && <1.3,
@@ -53,6 +55,7 @@ library
     hs-source-dirs: src
     other-modules:
         Cache.Registry
+        Cache.Registry.Mutable
         Data.Set.Extra
         JobQueue
         Notify
@@ -78,28 +81,30 @@ test-suite spec
     type: exitcode-stdio-1.0
     main-is: Spec.hs
     build-depends:
+        QuickCheck >=2.8.2 && <2.9,
+        attoparsec >=0.13.1.0 && <0.14,
+        base ==4.*,
+        binary >= 0.8.3.0 && <0.9,
+        bytestring >=0.10.8.1 && <0.11,
+        containers >=0.5.7.1 && <0.6,
+        directory >=1.2.6.2 && <1.3,
+        exceptions >=0.8.3 && <0.9,
         hspec >=2.2.4 && <2.3,
         hspec-attoparsec >=0.1.0.2 && <0.2,
-        quickcheck-instances >=0.3.12 && <0.4,
-        QuickCheck >=2.8.2 && <2.9,
-        base ==4.*,
-        bytestring >=0.10.8.1 && <0.11,
-        stringsearch >=0.3.6.6 && <0.4,
-        pcre-light >=0.4.0.4 && <0.5,
-        directory >=1.2.6.2 && <1.3,
-        mtl >=2.2.1 && <2.3,
-        exceptions >=0.8.3 && <0.9,
-        attoparsec >=0.13.1.0 && <0.14,
-        containers >=0.5.7.1 && <0.6,
-        unordered-containers >=0.2.7.1 && <0.3,
         lens ==4.14.*,
+        mtl >=2.2.1 && <2.3,
         ngx-cache-purge >=0.0.1 && <0.1,
-        protolude-lifted >=0.1.0.0 && <0.2
+        pcre-light >=0.4.0.4 && <0.5,
+        protolude-lifted >=0.1.0.0 && <0.2,
+        quickcheck-instances >=0.3.12 && <0.4,
+        stringsearch >=0.3.6.6 && <0.4,
+        unordered-containers >=0.2.7.1 && <0.3
     default-language: Haskell2010
     default-extensions: OverloadedStrings NoImplicitPrelude
     hs-source-dirs: test
     other-modules:
         Cache.ContentSpec
+        Cache.HeaderSpec
         PurgeSpec
     ghc-options: -Wall
 

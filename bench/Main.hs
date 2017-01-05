@@ -7,7 +7,6 @@ import           Criterion.Main
 import qualified Data.Attoparsec.ByteString as A
 import qualified Data.ByteString as Bytes
 
-
 testInput :: ByteString
 testInput =
   Bytes.concat $

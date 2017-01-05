@@ -23,6 +23,7 @@ import qualified Data.Text as Text
 import qualified Database.Redis as Redis
 import qualified JobQueue as Queue
 import qualified Notify
+import           System.Mem
 import           ThreadPool (ThreadPool)
 import qualified ThreadPool as Pool
 
@@ -43,8 +44,7 @@ loop = do
     waitAnyCatchCancel [a, b, c] :: m (Async (StM m ()), Either SomeException ())
   case errOrRet of
     Right () -> return ()
-    Left e ->
-      logErrorN $ "Thread aborted with an exception: " <> show e
+    Left e -> logErrorN $ "Thread aborted with an exception: " <> show e
   liftIO $ Notify.kill watcher
   liftIO $ Queue.kill jobs
 
@@ -54,20 +54,19 @@ watchFileEvents
 watchFileEvents watcher registry = do
   event <- liftIO $ Notify.getEvent watcher
   case event of
-    Notify.InotifyEvent path -> do
+    Notify.InotifyEvent path ->
       void $
-        fork $ do
-          entryOrErr <- try (liftIO $ parseCacheFile path)
-          case entryOrErr of
-            Right (Just !entry) ->
-              liftIO $ atomically $ modifyTVar' registry $ Registry.add entry
-            Right Nothing ->
-              logInfoN $ "Cache key not found in file " <> Text.pack path
-            Left (e :: IOException) ->
-              logWarnN $
-              "Exception while parsing file " <> Text.pack path <> ": " <>
-              show e
-      return ()
+      fork $ do
+        entryOrErr <- try (liftIO $ parseCacheFile path)
+        case entryOrErr of
+          Right (Just !entry) ->
+            void $
+            liftIO $ atomically $ modifyTVar' registry $ Registry.add entry
+          Right Nothing ->
+            logInfoN $ "Cache key not found in file " <> Text.pack path
+          Left (e :: IOException) ->
+            logWarnN $
+            "Exception while parsing file " <> Text.pack path <> ": " <> show e
     Notify.InotifyError err -> logWarnN $ "Inotify error: " <> err
 
 watchJobQueue
@@ -91,23 +90,14 @@ processPurgeJob
 processPurgeJob job registry = do
   logInfoN $ "Received a purge job: " <> show job
   current <- liftIO $ atomically $ readTVar registry
-  logInfoN $ "Total cache entries: " <> show (Registry.size current)
-  let maybeEntries = current ^. at (DomainName (Queue.pjHost job))
-  case maybeEntries of
-    Just entries -> do
-      (good, _bad) <- liftIO $ purge (Queue.pjPath job) entries
-      logInfoN $ "Finshed purge: " <> show job
-      liftIO . atomically . modifyTVar registry $
-        Registry.replaceWith (DomainName (Queue.pjHost job)) (Set.\\ good)
-      v' <- liftIO $ atomically $ readTVar registry
-      logInfoN $
-        "Total cache entries after purge: " <>
-        show (Registry.size v')
-      return ()
-    Nothing -> do
-      logWarnN $ "Domain not found " <> show (Queue.pjHost job)
-      fmap
-        logDebugN
-        (mappend "Known domains:" . show)
-        (Registry.keys current)
-      return ()
+  let entries = Registry.entries (DomainName (Queue.pjHost job)) current
+  logInfoN $ "Total cache entries: " <> show (Set.size entries)
+  (good, _bad) <- liftIO $ purge (Queue.pjPath job) entries
+  liftIO $
+    atomically $
+    modifyTVar' registry $
+    Registry.replaceWith (DomainName (Queue.pjHost job)) (Set.\\ good)
+  liftIO performGC
+  current' <- liftIO $ atomically $ readTVar registry
+  logInfoN $
+    "Total cache entries after purge: " <> show (Registry.size current')

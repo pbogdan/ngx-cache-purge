@@ -14,6 +14,7 @@ module Cache.Content
   , CacheEntry(..)
   , cacheKey
   , filePath
+  , cacheHeader
 
   , parseCacheFile
   , parseCacheKey
@@ -25,7 +26,9 @@ where
 
 import           Protolude.Lifted
 
+import           Cache.Header
 import           Control.Lens
+import           Control.Monad.Except
 import           Data.Attoparsec.ByteString (Parser)
 import qualified Data.Attoparsec.ByteString as A
 import           Data.ByteString (ByteString)
@@ -53,6 +56,7 @@ instance NFData CacheKey
 
 data CacheEntry = CacheEntry
   { _filePath :: !ByteString
+  , _cacheHeader :: !CacheHeader
   , _cacheKey :: !CacheKey
   } deriving (Generic, Show, Eq, Ord)
 
@@ -73,13 +77,15 @@ parsePrefix :: Parser ByteString
 parsePrefix = foldr (liftA2 (<>)) (pure mempty) actions
   where
     actions =
-      [ A.string "KEY: "
-      , BS.pack <$>
+      [ BS.pack <$>
         A.manyTill
           (A.satisfy $ const True)
           (A.string "--" *> A.skipWhile (\x -> x == toEnum 45))
       , parseProtocol
       ]
+
+hoistEither :: Monad m => Either e a -> ExceptT e m a
+hoistEither = ExceptT . return
 
 parseProtocol :: Parser ByteString
 parseProtocol =
@@ -88,15 +94,14 @@ parseProtocol =
 parseCacheFile :: FilePath -> IO (Maybe CacheEntry)
 parseCacheFile path =
   withFile path ReadMode $ \h -> do
-    header <- BS.hGet h 4096
-    case parseCacheFileHeader header of
-      Right !v -> return (Just (CacheEntry (BC.pack path) v))
+    headerBytes <- BS.hGet h 4096
+    entryOrErr <-
+      runExceptT $ do
+        header <- hoistEither $ parseCacheHeader headerBytes
+        key <-
+          hoistEither $
+          first toS $ A.parseOnly parseCacheKey . cacheHeaderKey $ header
+        return $ CacheEntry (BC.pack path) header key
+    case entryOrErr of
+      Right !x -> return $ Just x
       Left !_ -> return Nothing
-
-parseCacheFileHeader :: ByteString -> Either Text CacheKey
-parseCacheFileHeader bytes =
-  let ls = BC.lines bytes
-      line = fromMaybe "" $ find (BS.isPrefixOf "KEY: ") ls
-  in case A.parseOnly parseCacheKey line of
-       Right x -> Right x
-       Left e -> Left . toS $ e

@@ -1,21 +1,3 @@
 # ngx-cache-purge
 
-TODO: Write description here
-
-## Installation
-
-TODO: Write installation instructions here
-
-## Usage
-
-TODO: Write usage instructions here
-
-## How to run tests
-
-```
-cabal configure --enable-tests && cabal build && cabal test
-```
-
-## Contributing
-
-TODO: Write contribution instructions here
+Experimental rewrite of [nginx-cache-purge](https://github.com/jeichorn/nginx-cache-purge) written in Haskell, using inotify for monitoring cache files.

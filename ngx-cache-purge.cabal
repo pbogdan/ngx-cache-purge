@@ -13,7 +13,6 @@ category: Web
 author: Piotr Bogdan <ppbogdan@gmail.com>
 extra-source-files:
     README.md
-    ChangeLog.md
 
 source-repository head
     type: git

@@ -76,6 +76,21 @@ executable ncp
     hs-source-dirs: app
     ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
 
+executable nci
+    main-is: Nci.hs
+    build-depends:
+        attoparsec >=0.13.1.0 && <0.14,
+        base ==4.*,
+        ekg >=0.4.0.11 && <0.5,
+        monad-logger >=0.3.20.1 && <0.4,
+        ngx-cache-purge >=0.0.1 && <0.1,
+        protolude-lifted >=0.1.0.0 && <0.2,
+        pretty-show >= 1.6.12 && < 1.7
+    default-language: Haskell2010
+    default-extensions: OverloadedStrings NoImplicitPrelude
+    hs-source-dirs: app
+    ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
+
 test-suite spec
     type: exitcode-stdio-1.0
     main-is: Spec.hs

@@ -21,6 +21,7 @@ import           Data.Binary
 import           Data.Binary.Get
 import           Data.Binary.Put
 import qualified Data.ByteString as Bytes
+import qualified Data.ByteString.Base64 as Base64
 import qualified Data.ByteString.Lazy as LazyBytes
 import           Data.ByteString.Short (ShortByteString)
 import qualified Data.ByteString.Short as ShortBytes
@@ -160,6 +161,7 @@ displayHeader header =
           Bytes.filter (0 /=) . ShortBytes.fromShort . cacheHeaderVary $
           header
         , Encoding.decodeUtf8With (Encoding.replace ' ') .
+          Base64.encode .
           Bytes.filter (0 /=) . ShortBytes.fromShort . cacheHeaderVariant $
           header
         , toS . cacheHeaderKey $ header

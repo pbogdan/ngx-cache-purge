@@ -173,7 +173,7 @@ displayHeader header =
   let labels =
         ["Version:             ", "Valid until:         "] ++
         if cacheHeaderVersion header == 5
-          then ["Updating sec", "Error sec"]
+          then ["Updating sec         ", "Error sec            "]
           else [] ++
                [ "Last modified:       "
                , "Created:             "

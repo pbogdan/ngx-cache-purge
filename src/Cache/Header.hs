@@ -162,56 +162,61 @@ pad n x xs
   | length xs >= n = xs
   | otherwise = xs ++ replicate (n - length xs) x
 
+formatTimestamp
+  :: Integral a
+  => a -> Text
+formatTimestamp =
+  toS . formatTime defaultTimeLocale "%c" . posixSecondsToUTCTime . fromIntegral
+
 displayHeader :: CacheHeader -> Text
 displayHeader header =
   let labels =
-        [ "Version:             "
-        , "Valid until:         "
-        , "Last modified:       "
-        , "Created:             "
-        , "CRC32:               "
-        , "Valid msec:          "
-        , "Header start offset: "
-        , "Body start offset:   "
-        , "ETag length:         "
-        , "ETag:                "
-        , "Vary len:            "
-        , "Vary:                "
-        , "Variant:             "
-        , "Cache key:           "
-        ]
+        ["Version:             ", "Valid until:         "] ++
+        if cacheHeaderVersion header == 5
+          then ["Updating sec", "Error sec"]
+          else [] ++
+               [ "Last modified:       "
+               , "Created:             "
+               , "CRC32:               "
+               , "Valid msec:          "
+               , "Header start offset: "
+               , "Body start offset:   "
+               , "ETag length:         "
+               , "ETag:                "
+               , "Vary len:            "
+               , "Vary:                "
+               , "Variant:             "
+               , "Cache key:           "
+               ]
       values =
         [ show . cacheHeaderVersion $ header
-        , toS .
-          formatTime defaultTimeLocale "%c" .
-          posixSecondsToUTCTime . fromIntegral . cacheHeaderValidSec $
-          header
-        , toS .
-          formatTime defaultTimeLocale "%c" .
-          posixSecondsToUTCTime . fromIntegral . cacheHeaderLastModified $
-          header
-        , toS .
-          formatTime defaultTimeLocale "%c" .
-          posixSecondsToUTCTime . fromIntegral $
-          cacheHeaderDate header
-        , show . cacheHeaderCrc32 $ header
-        , show . cacheHeaderValidMSec $ header
-        , show . cacheHeaderHeaderStart $ header
-        , show . cacheHeaderBodyStart $ header
-        , show . cacheHeaderEtagLen $ header
-        , Encoding.decodeUtf8With (Encoding.replace ' ') .
-          Bytes.filter (0 /=) . ShortBytes.fromShort . cacheHeaderEtag $
-          header
-        , show . cacheHeaderVaryLen $ header
-        , Encoding.decodeUtf8With (Encoding.replace ' ') .
-          Bytes.filter (0 /=) . ShortBytes.fromShort . cacheHeaderVary $
-          header
-        , Encoding.decodeUtf8With (Encoding.replace ' ') .
-          Base64.encode .
-          Bytes.filter (0 /=) . ShortBytes.fromShort . cacheHeaderVariant $
-          header
-        , toS . cacheHeaderKey $ header
-        ] :: [Text]
+        , formatTimestamp . cacheHeaderValidSec $ header
+        ] ++
+        if cacheHeaderVersion header == 5
+          then [ formatTimestamp . fromMaybe 0 . cacheHeaderUpdatingSec $ header
+               , formatTimestamp . fromMaybe 0 . cacheHeaderErrorSec $ header
+               ]
+          else [] ++
+               [ formatTimestamp . cacheHeaderLastModified $ header
+               , formatTimestamp . cacheHeaderDate $ header
+               , show . cacheHeaderCrc32 $ header
+               , show . cacheHeaderValidMSec $ header
+               , show . cacheHeaderHeaderStart $ header
+               , show . cacheHeaderBodyStart $ header
+               , show . cacheHeaderEtagLen $ header
+               , Encoding.decodeUtf8With (Encoding.replace ' ') .
+                 Bytes.filter (0 /=) . ShortBytes.fromShort . cacheHeaderEtag $
+                 header
+               , show . cacheHeaderVaryLen $ header
+               , Encoding.decodeUtf8With (Encoding.replace ' ') .
+                 Bytes.filter (0 /=) . ShortBytes.fromShort . cacheHeaderVary $
+                 header
+               , Encoding.decodeUtf8With (Encoding.replace ' ') .
+                 Base64.encode .
+                 Bytes.filter (0 /=) . ShortBytes.fromShort . cacheHeaderVariant $
+                 header
+               , toS . cacheHeaderKey $ header
+               ] :: [Text]
   in Text.intercalate "\n" (zipWith (<>) labels values)
 
 parseCacheHeader :: ByteString -> Either Text CacheHeader

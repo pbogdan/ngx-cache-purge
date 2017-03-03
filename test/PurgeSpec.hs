@@ -61,6 +61,8 @@ spec =
       CacheHeader
       { cacheHeaderVersion = 0
       , cacheHeaderValidSec = 0
+      , cacheHeaderUpdatingSec = Nothing
+      , cacheHeaderErrorSec = Nothing
       , cacheHeaderLastModified = 0
       , cacheHeaderDate = 0
       , cacheHeaderCrc32 = 0

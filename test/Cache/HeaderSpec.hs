@@ -30,26 +30,46 @@ instance Arbitrary ShortByteString where
 
 instance Arbitrary CacheHeader where
   arbitrary = do
-    let version = 3
+    version <- oneof [pure 3, pure 5]
     validSec <- arbitrary
+    updatingSec <-
+      if version == 3
+        then pure Nothing
+        else arbitrary `suchThat` isJust
+    errorSec <-
+      if version == 3
+        then pure Nothing
+        else arbitrary `suchThat` isJust
     lastModified <- arbitrary
     date <- arbitrary
     crc32 <- arbitrary
     validMSec <- arbitrary
     bodyStart <- arbitrary
     etagLen <- arbitrary
-    etag <- arbitrary `suchThat` ((== 42) . ShortBytes.length)
+    let len =
+          if version == 5
+            then 128
+            else 42
+    etag <- arbitrary `suchThat` ((== len) . ShortBytes.length)
     varyLen <- arbitrary
-    vary <- arbitrary `suchThat` ((== 42) . ShortBytes.length)
+    vary <- arbitrary `suchThat` ((== len) . ShortBytes.length)
     variant_ <- arbitrary `suchThat` ((== 16) . ShortBytes.length)
     key <- arbitrary
     let headerStart =
-          144 + Bytes.length "\n" + Bytes.length "KEY: " + Bytes.length key +
+          144 +
+          (if version == 5
+             then 16 + ((128 - 42) * 2)
+             else 0) +
+          Bytes.length "\n" +
+          Bytes.length "KEY: " +
+          Bytes.length key +
           Bytes.length "\n"
     return
       CacheHeader
       { cacheHeaderVersion = version
       , cacheHeaderValidSec = validSec
+      , cacheHeaderUpdatingSec = updatingSec
+      , cacheHeaderErrorSec = errorSec
       , cacheHeaderLastModified = lastModified
       , cacheHeaderDate = date
       , cacheHeaderCrc32 = crc32

@@ -1,5 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -25,6 +26,7 @@ import qualified Data.ByteString.Base64 as Base64
 import qualified Data.ByteString.Lazy as LazyBytes
 import           Data.ByteString.Short (ShortByteString)
 import qualified Data.ByteString.Short as ShortBytes
+import           Data.String (String)
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Encoding
 import qualified Data.Text.Encoding.Error as Encoding
@@ -121,9 +123,9 @@ instance Binary CacheHeader where
   put CacheHeader {..} = do
     putWord64host cacheHeaderVersion
     putInt64host cacheHeaderValidSec
-    when (cacheHeaderVersion == 5) $
+    when (cacheHeaderVersion == 5) $ do
       traverse_ putInt64host cacheHeaderUpdatingSec
-    when (cacheHeaderVersion == 5) $ traverse_ putInt64host cacheHeaderErrorSec
+      traverse_ putInt64host cacheHeaderErrorSec
     putInt64host cacheHeaderLastModified
     putInt64host cacheHeaderDate
     putWord32host cacheHeaderCrc32
@@ -162,6 +164,13 @@ pad n x xs
   | length xs >= n = xs
   | otherwise = xs ++ replicate (n - length xs) x
 
+padString
+  :: (StringConv a String, StringConv String a)
+  => Int -> Char -> a -> a
+padString n x xs
+  | length (toS xs :: String) >= n = xs
+  | otherwise = toS (toS xs ++ replicate (n - length (toS xs :: String)) x)
+
 formatTimestamp
   :: Integral a
   => a -> Text
@@ -171,23 +180,25 @@ formatTimestamp =
 displayHeader :: CacheHeader -> Text
 displayHeader header =
   let labels =
-        ["Version:             ", "Valid until:         "] ++
-        if cacheHeaderVersion header == 5
-          then ["Updating sec         ", "Error sec            "]
-          else [] ++
-               [ "Last modified:       "
-               , "Created:             "
-               , "CRC32:               "
-               , "Valid msec:          "
-               , "Header start offset: "
-               , "Body start offset:   "
-               , "ETag length:         "
-               , "ETag:                "
-               , "Vary len:            "
-               , "Vary:                "
-               , "Variant:             "
-               , "Cache key:           "
-               ]
+        map
+          (padString 21 ' ')
+          (["Version: ", "Valid until:"] ++
+           if cacheHeaderVersion header == 5
+             then ["Updating sec", "Error sec"]
+             else [] ++
+                  [ "Last modified:"
+                  , "Created:"
+                  , "CRC32:"
+                  , "Valid msec:"
+                  , "Header start offset:"
+                  , "Body start offset:"
+                  , "ETag length:"
+                  , "ETag:"
+                  , "Vary len:"
+                  , "Vary:"
+                  , "Variant:"
+                  , "Cache key:"
+                  ])
       values =
         [ show . cacheHeaderVersion $ header
         , formatTimestamp . cacheHeaderValidSec $ header
